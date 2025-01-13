@@ -1,0 +1,9 @@
+name: voiceauth
+dependencies:
+  - python=3.8
+  - numpy
+  - librosa
+  - soundfile
+  - noisereduce
+  - webrtcvad
+  - pydub
