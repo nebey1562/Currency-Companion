@@ -1,9 +1,24 @@
 name: voiceauth
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
 dependencies:
   - python=3.8
   - numpy
-  - librosa
-  - soundfile
-  - noisereduce
-  - webrtcvad
-  - pydub
+  - scipy
+  - matplotlib
+  - pandas
+  - scikit-learn
+  - cudatoolkit=11.8
+  - cudnn=8.6.0
+  - pytorch
+  - torchaudio
+  - pysoundfile
+  - ffmpeg
+  - pip
+  - pip:
+      - librosa
+      - noisereduce
+      - streamlit
+
