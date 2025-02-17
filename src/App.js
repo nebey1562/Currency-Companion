@@ -3,16 +3,30 @@ import axios from 'axios';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 
+const VoiceBack = () => {
+  const navigate = useNavigate();
+  const { transcript, resetTranscript } = useSpeechRecognition();
+
+  useEffect(() => {
+    const lowerTranscript = transcript.toLowerCase();
+    if (lowerTranscript.includes('go back')) {
+      navigate(-1);
+      resetTranscript();
+    }
+  }, [transcript, navigate, resetTranscript]);
+
+  return null;
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const { transcript, resetTranscript } = useSpeechRecognition();
   const [isListening, setIsListening] = useState(false);
   const [scrapedData, setScrapedData] = useState('');
 
-
   const fetchAndSpeakData = async () => { 
     try {
-      const response = await axios.get('http://localhost:5000/scrape');  //This is not working Kez can u look into it
+      const response = await axios.get('http://localhost:5000/scrape');  // This endpoint should be working on your backend.
       const { scrapedData } = response.data;
       setScrapedData(scrapedData);
 
@@ -53,7 +67,7 @@ const Home = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-8">
       <h1 className="text-4xl font-bold mb-6">Welcome to Our Banking Website</h1>
       <p className="text-lg mb-4">
-        Available commands: "account", "transfer", "balance".
+        Available commands: "account", "transfer", "balance", "go back".
       </p>
       {!isListening ? (
         <button
@@ -76,26 +90,44 @@ const Home = () => {
   );
 };
 
-const Account = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-    <h2 className="text-3xl font-semibold mb-4">Account Details</h2>
-    <p className="text-gray-600">View your account information here.</p>
-  </div>
-);
+const Account = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <VoiceBack />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
+        <h2 className="text-3xl font-semibold mb-4">Account Details</h2>
+        <p className="text-gray-600">View your account information here.</p>
+      </div>
+    </>
+  );
+};
 
-const Transfer = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-    <h2 className="text-3xl font-semibold mb-4">Transfer Funds</h2>
-    <p className="text-gray-600">Transfer money between accounts on this page.</p>
-  </div>
-);
+const Transfer = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <VoiceBack />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
+        <h2 className="text-3xl font-semibold mb-4">Transfer Funds</h2>
+        <p className="text-gray-600">Transfer money between accounts on this page.</p>
+      </div>
+    </>
+  );
+};
 
-const Balance = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-    <h2 className="text-3xl font-semibold mb-4">Balance Inquiry</h2>
-    <p className="text-gray-600">Check your current balance here.</p>
-  </div>
-);
+const Balance = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <VoiceBack />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
+        <h2 className="text-3xl font-semibold mb-4">Balance Inquiry</h2>
+        <p className="text-gray-600">Check your current balance here.</p>
+      </div>
+    </>
+  );
+};
 
 const App = () => (
   <Router>
