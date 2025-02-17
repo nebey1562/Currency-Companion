@@ -39,6 +39,9 @@
     ]
   },
   "devDependencies": {
-    "puppeteer": "^24.1.0"
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.2",
+    "puppeteer": "^24.1.0",
+    "tailwindcss": "^4.0.6"
   }
 }
