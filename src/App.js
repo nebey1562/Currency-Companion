@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import './App.css';
 
 const VoiceBack = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Home = () => {
 
   const fetchAndSpeakData = async () => { 
     try {
-      const response = await axios.get('http://localhost:5000/scrape');  // This endpoint should be working on your backend.
+      const response = await axios.get('http://localhost:5000/scrape');  
       const { scrapedData } = response.data;
       setScrapedData(scrapedData);
 
@@ -64,70 +65,52 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-8">
-      <h1 className="text-4xl font-bold mb-6">Welcome to Our Banking Website</h1>
-      <p className="text-lg mb-4">
-        Available commands: "account", "transfer", "balance", "go back".
-      </p>
-      {!isListening ? (
-        <button
-          onClick={handleStartListening}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow-lg transition duration-200"
-        >
-          Activate Voice Navigation
-        </button>
-      ) : (
-        <p className="text-green-600 text-lg font-medium mt-4">
-          Microphone is active and listening for your commands...
-        </p>
-      )}
-      {scrapedData && (
-        <p className="mt-4 text-gray-700">
-          <strong>Scraped Data:</strong> {scrapedData}
-        </p>
-      )}
+    <>
+      <h1 className="header">Welcome to Our Banking Website</h1>
+      <div className="container">
+        <p>Available Commands: Account | Transfer | Balance | Go Back</p>
+        
+        {!isListening ? (
+          <button onClick={handleStartListening}>Activate Voice Navigation</button>
+        ) : (
+          <p className="mic-status">Microphone is active and listening for your commands...</p>
+        )}
+        
+        {scrapedData && <p className="scraped-data">Scraped Data: {scrapedData}</p>}
+      </div>
+    </>
+  );
+}  
+
+const Account = () => (
+  <>
+    <VoiceBack />
+    <div className="container">
+      <h2>Account Details</h2>
+      <p>View your account information here.</p>
     </div>
-  );
-};
+  </>
+);
 
-const Account = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <VoiceBack />
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-        <h2 className="text-3xl font-semibold mb-4">Account Details</h2>
-        <p className="text-gray-600">View your account information here.</p>
-      </div>
-    </>
-  );
-};
+const Transfer = () => (
+  <>
+    <VoiceBack />
+    <div className="container">
+      <h2>Transfer Funds</h2>
+      <p>Transfer money between accounts on this page.</p>
+    </div>
+  </>
+);
 
-const Transfer = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <VoiceBack />
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-        <h2 className="text-3xl font-semibold mb-4">Transfer Funds</h2>
-        <p className="text-gray-600">Transfer money between accounts on this page.</p>
-      </div>
-    </>
-  );
-};
-
-const Balance = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <VoiceBack />
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-        <h2 className="text-3xl font-semibold mb-4">Balance Inquiry</h2>
-        <p className="text-gray-600">Check your current balance here.</p>
-      </div>
-    </>
-  );
-};
+const Balance = () => (
+  <>
+    <VoiceBack />
+    <div className="container">
+      <h2>Balance Inquiry</h2>
+      <p>Check your current balance here.</p>
+    </div>
+  </>
+);
 
 const App = () => (
   <Router>
