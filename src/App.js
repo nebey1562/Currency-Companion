@@ -38,7 +38,7 @@ const VoiceAuth = () => {
         const blob = new Blob(audioChunks, { type: 'audio/wav' });
         setAudioBlob(blob);
       };
-      setTimeout(() => mediaRecorderRef.current.stop(), 3000); 
+      setTimeout(() => mediaRecorderRef.current.stop(), 3000);
     });
   };
 
@@ -71,21 +71,38 @@ const VoiceAuth = () => {
     setIsVerifying(false);
   };
 
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.code === 'Space') {
+        event.preventDefault(); // Prevent default spacebar behavior (scrolling)
+        if (audioBlob && !isVerifying) {
+          verify();
+        } else if (!audioBlob) {
+          startRecording(); // Trigger recording if no audio exists
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [audioBlob, isVerifying, verify, startRecording]);
+
   return (
     <div className="container">
       <h1>Voice Authentication</h1>
-      <p>Record your voice for enrollment or verification.</p>
+      <p>Record your voice for enrollment or verification. (Press Spacebar to Record/Verify)</p>
       <button onClick={startRecording}>Record Voice (3s)</button>
       {audioBlob && (
-  <button onClick={verify} disabled={isVerifying}>
-    {isVerifying ? 'Verifying...' : 'Verify'}
-  </button>
-)}
+        <button onClick={verify} disabled={isVerifying}>
+          {isVerifying ? 'Verifying...' : 'Verify'}
+        </button>
+      )}
       {message && <p>{message}</p>}
     </div>
   );
 };
 
+// Home Component
 const Home = () => {
   const navigate = useNavigate();
   const { transcript, resetTranscript } = useSpeechRecognition();
@@ -117,6 +134,18 @@ const Home = () => {
   };
 
   useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.code === 'Space' && !isListening) {
+        event.preventDefault(); // Prevent default spacebar behavior :)
+        handleStartListening();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isListening]);
+
+  useEffect(() => {
     if (isListening) {
       const lowerTranscript = transcript.toLowerCase();
       if (lowerTranscript.includes('account')) {
@@ -135,7 +164,7 @@ const Home = () => {
   return (
     <div className="container" ref={homeContentRef}>
       <h1>Welcome to Our Banking Website</h1>
-      <p>Available Voice Commands: "Account" | "Transfer" | "Balance" | "Go Back"</p>
+      <p>Available Voice Commands: "Account" | "Transfer" | "Balance" | "Go Back" (Spacebar to Activate)</p>
       {!isListening ? (
         <button onClick={handleStartListening}>Activate Voice Navigation</button>
       ) : (
@@ -174,7 +203,6 @@ const Balance = () => {
       })
       .catch((err) => {
         console.error("Error fetching balance data:", err);
-        // setError("Failed to load user data")
       });
   }, []);
   useEffect(() => {
