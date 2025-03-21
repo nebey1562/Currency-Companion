@@ -60,12 +60,15 @@ const CustomNavbar = () => {
 
 
 // Hero Section Component
-const HeroSection = () => (
+const HeroSection = ({ handleStartListening, isListening }) => (
   <header className="bg-primary text-white text-center py-5">
     <div className="container">
-      <h1>Welcome to MyBank</h1>
-      <p>Your Trusted Banking Partner</p>
-      <a href="/home" className="btn btn-light mt-3">Explore Services</a>
+      <p className="text-center">Voice Commands: "Account" | "Transfer" | "Balance" | "Go Back"</p>
+      {!isListening ? (
+        <button className="btn btn-light mt-3" onClick={handleStartListening}>Activate Voice Navigation</button>
+      ) : (
+        <p className="text-center text-success">Listening...</p>
+      )}
     </div>
   </header>
 );
@@ -204,19 +207,14 @@ const Home = () => {
   return (
     <div className="container" ref={homeContentRef}>
       <CustomNavbar />
-      <HeroSection />
+      <HeroSection handleStartListening={handleStartListening} isListening={isListening} />
       <Features />
       <AdditionalSections />
-      <p className="text-center">Voice Commands: "Account" | "Transfer" | "Balance" | "Go Back"</p>
-      {!isListening ? (
-        <button className="btn btn-primary" onClick={handleStartListening}>Activate Voice Navigation</button>
-      ) : (
-        <p className="text-center text-success">Listening...</p>
-      )}
       <Footer />
     </div>
   );
 };
+
 
 // Account, Transfer, and Balance Pages
 const Account = () => (
@@ -273,14 +271,14 @@ const VoiceAuth = () => {
   return (
     <div className="container text-center">
       <CustomNavbar />
-      <HeroSection />
+      <Container><h1>Voice Authentication</h1>
+      <p>Press Verify to authenticate.</p>
+      <button className="btn btn-primary" onClick={handleVerify}>Verify</button>
+      {message && <p>{message}</p>}</Container>
       <PromotionalBanner />
       <Features />
       <AdditionalSections />
-      <h1>Voice Authentication</h1>
-      <p>Press Verify to authenticate.</p>
-      <button className="btn btn-primary" onClick={handleVerify}>Verify</button>
-      {message && <p>{message}</p>}
+      
     </div>
   );
 };
