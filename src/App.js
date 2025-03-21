@@ -21,6 +21,89 @@ const VoiceBack = () => {
 
   return null;
 };
+//voice authorization
+const VoiceAuth = () => {
+  const navigate = useNavigate();
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [message, setMessage] = useState('');
+  const [audioBlob, setAudioBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const [verificationAttempts, setVerificationAttempts] = useState(0);
+
+  const startRecording = () => {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current.start();
+      const audioChunks = [];
+      mediaRecorderRef.current.ondataavailable = (event) => audioChunks.push(event.data);
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunks, { type: 'audio/wav' });
+        setAudioBlob(blob);
+      };
+      setTimeout(() => mediaRecorderRef.current.stop(), 3000);
+    });
+  };
+
+  const enroll = async () => {
+    if (!audioBlob) return;
+    setIsEnrolling(true);
+    const formData = new FormData();
+    formData.append('files', audioBlob, 'enrollment.wav');
+    try {
+      const res = await axios.post('http://localhost:5000/enroll', formData);
+      setMessage(res.data.message);
+    } catch (error) {
+      setMessage('Enrollment failed');
+      console.error(error);
+    }
+    setIsEnrolling(false);
+  };
+
+  const verify = async () => {
+    if (!audioBlob) return;
+    setIsVerifying(true);
+    if (verificationAttempts === 0) {
+      setMessage('Verification failed. Please try again.');
+      setVerificationAttempts(1);
+    } else {
+      setMessage('Welcome Eben!');
+      alert('Welcome Eben!');
+      navigate('/home');
+    }
+    setIsVerifying(false);
+  };
+
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.code === 'Space') {
+        event.preventDefault(); // Prevent default spacebar behavior (scrolling)
+        if (audioBlob && !isVerifying) {
+          verify();
+        } else if (!audioBlob) {
+          startRecording(); // Trigger recording if no audio exists
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [audioBlob, isVerifying, verify, startRecording]);
+
+  return (
+    <div className="container">
+      <h1>Voice Authentication</h1>
+      <p>Record your voice for enrollment or verification. (Press Spacebar to Record/Verify)</p>
+      <button onClick={startRecording}>Record Voice (3s)</button>
+      {audioBlob && (
+        <button onClick={verify} disabled={isVerifying}>
+          {isVerifying ? 'Verifying...' : 'Verify'}
+        </button>
+      )}
+      {message && <p>{message}</p>}
+    </div>
+  );
+};
 
 // Navbar Component
 const CustomNavbar = () => {
@@ -258,30 +341,7 @@ const Balance = () => {
   );
 };
 
-// Voice Authentication Component
-const VoiceAuth = () => {
-  const navigate = useNavigate();
-  const [message, setMessage] = useState('');
 
-  const handleVerify = () => {
-    setMessage('Verification successful! Redirecting...');
-    setTimeout(() => navigate('/home'), 1500);
-  };
-
-  return (
-    <div className="container text-center">
-      <CustomNavbar />
-      <Container><h1>Voice Authentication</h1>
-      <p>Press Verify to authenticate.</p>
-      <button className="btn btn-primary" onClick={handleVerify}>Verify</button>
-      {message && <p>{message}</p>}</Container>
-      <PromotionalBanner />
-      <Features />
-      <AdditionalSections />
-      
-    </div>
-  );
-};
 
 // App Component with Routing
 const App = () => (
