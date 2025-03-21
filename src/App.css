@@ -1,126 +1,94 @@
-/* General Styles */
-body {
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(to right, #b3e5fc, #81d4fa, #4fc3f7);
-  color: #343a40;
+/* Ensure full-width layout */
+body, html {
   margin: 0;
   padding: 0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  text-align: center;
-  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #f4f4f4;
+  font-family: Arial, sans-serif;
 }
 
-/* Heading at the Top */
-.header {
-  font-size: 2.5rem;
-  font-weight: 600;
-  color: #212121;
-  text-transform: none;
-  margin-top: 3rem;
-  margin-bottom: 1rem;
-  position: relative;
-  z-index: 10;
-}
-
-/* Container */
+/* Main container for full width */
 .container {
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  padding: 2rem;
   width: 90%;
-  max-width: 700px;
-  animation: fadeIn 0.5s ease-in-out;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 2rem;
-}
-
-/* Headings inside the box */
-h1, h2 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #343a40;
-  margin-bottom: 1rem;
-}
-
-p {
-  font-size: 1.2rem;
-  color: #343a40;
-  margin-bottom: 1.5rem;
-}
-
-/* Buttons */
-button, .nav-button, .back-button {
-  background: #0277bd;
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
-  padding: 14px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 15px;
-  display: inline-block;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-button:hover, .nav-button:hover, .back-button:hover {
-  background: #01579b;
-  transform: scale(1.05);
-}
-
-/* Navigation Buttons at the Bottom */
-.nav-buttons {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-/* Microphone Status */
-.mic-status {
-  color: #343a40;
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-top: 15px;
-}
-
-/* Input Fields */
-input {
-  font-size: 1.1rem;
-  padding: 1rem;
-  margin: 0.5rem 0;
-  border: 2px solid #0277bd;
-  border-radius: 8px;
-  width: 80%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.2);
-  color: #343a40;
 }
 
-input::placeholder {
-  color: #343a40;
-  opacity: 0.8;
+/* Navbar adjustments for larger screens */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #0074cc;
+  padding: 15px 40px;
 }
 
-/* Scraped Data Display */
-.scraped-data {
-  margin-top: 10px;
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #343a40;
+.navbar a {
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  font-size: 1.2rem;
 }
 
-/* Keyframes for animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Hero Section */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 50px;
+  background-color: #e0f7fa;
+  min-height: 60vh;
 }
 
+.hero-text {
+  flex: 1;
+  padding-right: 30px;
+  text-align: left;
+}
+
+.hero img {
+  width: 50%;
+  max-width: 600px;
+  height: auto;
+}
+
+/* Login/Register Button - Always Visible */
+.login-btn {
+  background-color: #ff6600;
+  color: white;
+  padding: 12px 25px;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.login-btn:hover {
+  background-color: #cc5500;
+}
+
+/* Footer */
+.footer {
+  background-color: #333;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  margin-top: 50px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .hero img {
+    width: 80%;
+    margin-top: 20px;
+  }
+}
