@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min';
-import { Navbar, Nav, NavDropdown, Container, Button, Row, Col, Card } from 'react-bootstrap';
+import { Navbar, Nav, NavDropdown, Container, Row, Col, Card } from 'react-bootstrap';
 import './App.css';
 
 // Voice Navigation Component
@@ -23,205 +22,244 @@ const VoiceBack = () => {
 };
 
 // Navbar Component
-const CustomNavbar = () => {
-  return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="custom-navbar" style={{ height: '50px' }}>
-      <Container>
-        <Navbar.Brand href="/home" style={{ fontSize: '1.2rem' }}>MyBank</Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            <NavDropdown title="Accounts" id="accounts-dropdown">
-              <NavDropdown.Item style={{ color: 'black' }}>Savings Account</NavDropdown.Item>
-              <NavDropdown.Item style={{ color: 'black' }}>Current Account</NavDropdown.Item>
-            </NavDropdown>
-            <NavDropdown title="Loans" id="loans-dropdown">
-              <NavDropdown.Item style={{ color: 'black' }}>Home Loan</NavDropdown.Item>
-              <NavDropdown.Item style={{ color: 'black' }}>Personal Loan</NavDropdown.Item>
-            </NavDropdown>
-            <NavDropdown title="Cards" id="cards-dropdown">
-              <NavDropdown.Item style={{ color: 'black' }}>Credit Cards</NavDropdown.Item>
-              <NavDropdown.Item style={{ color: 'black' }}>Debit Cards</NavDropdown.Item>
-            </NavDropdown>
-            <Nav.Link href="/faq">FAQ</Nav.Link>
-            <Nav.Link href="/contact-us">Contact Us</Nav.Link>
-          </Nav>
-          <Nav className="ms-auto">
-            <NavDropdown title="Profile" id="profile-dropdown" align="end">
-              <NavDropdown.Item style={{ color: 'black' }}>Settings</NavDropdown.Item>
-              <NavDropdown.Item style={{ color: 'red' }}>Logout</NavDropdown.Item>
-            </NavDropdown>
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
-  );
+const CustomNavbar = () => (
+  <Navbar bg="dark" variant="dark" expand="lg" style={{ height: '50px' }}>
+    <Container>
+      <Navbar.Brand href="/home">MyBank</Navbar.Brand>
+      <Navbar.Toggle aria-controls="basic-navbar-nav" />
+      <Navbar.Collapse id="basic-navbar-nav">
+        <Nav className="me-auto">
+          <NavDropdown title="Accounts" id="accounts-dropdown">
+            <NavDropdown.Item>Savings Account</NavDropdown.Item>
+            <NavDropdown.Item>Current Account</NavDropdown.Item>
+          </NavDropdown>
+          <NavDropdown title="Loans" id="loans-dropdown">
+            <NavDropdown.Item>Home Loan</NavDropdown.Item>
+            <NavDropdown.Item>Personal Loan</NavDropdown.Item>
+          </NavDropdown>
+          <Nav.Link href="/faq">FAQ</Nav.Link>
+          <Nav.Link href="/contact-us">Contact Us</Nav.Link>
+        </Nav>
+        <Nav className="ms-auto">
+          <NavDropdown title="Profile" id="profile-dropdown" align="end">
+            <NavDropdown.Item>Settings</NavDropdown.Item>
+            <NavDropdown.Item style={{ color: 'red' }}>Logout</NavDropdown.Item>
+          </NavDropdown>
+        </Nav>
+      </Navbar.Collapse>
+    </Container>
+  </Navbar>
+);
+
+// TTS Player Component with Retry Logic
+const TTSPlayer = () => {
+  const location = useLocation();
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const fetchAndPlayAudio = async (retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const ttsResponse = await axios.get('http://localhost:5000/tts', {
+            params: { text: location.pathname },
+          });
+          const audioUrl = ttsResponse.data.audioUrl;
+          if (audioUrl && audioRef.current) {
+            audioRef.current.src = audioUrl;
+            audioRef.current.play().catch((err) => console.error("Audio playback error:", err));
+          }
+          break;
+        } catch (error) {
+          console.error(`TTS fetch error for ${location.pathname} (attempt ${i + 1}):`, error);
+          if (i === retries - 1) throw error;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    };
+    fetchAndPlayAudio();
+  }, [location.pathname]);
+
+  return <audio ref={audioRef} autoPlay style={{ display: 'none' }} />;
 };
 
+// Hero Section with Spacebar Activation
+const HeroSection = ({ handleStartListening, isListening }) => {
+  const buttonRef = useRef(null);
 
-// Hero Section Component
-const HeroSection = ({ handleStartListening, isListening }) => (
-  <header className="bg-primary text-white text-center py-5">
-    <div className="container">
-      <p className="text-center">Voice Commands: "Account" | "Transfer" | "Balance" | "Go Back"</p>
-      {!isListening ? (
-        <button className="btn btn-light mt-3" onClick={handleStartListening}>Activate Voice Navigation</button>
-      ) : (
-        <p className="text-center text-success">Listening...</p>
-      )}
-    </div>
-  </header>
-);
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      console.log('Key pressed:', event.code); // Debug key press
+      if (event.code === 'Space' && !isListening) {
+        event.preventDefault();
+        console.log('Spacebar detected, starting listening');
+        handleStartListening();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      console.log('Cleaned up keydown listener in HeroSection');
+    };
+  }, [handleStartListening, isListening]);
 
-// Promotional Banner
-const PromotionalBanner = () => (
-  <div className="alert alert-info text-center" role="alert">
-    Get 10% cashback on all online transactions this month!
-  </div>
-);
+  return (
+    <header className="bg-primary text-white text-center py-5">
+      <Container>
+        <p>Voice Commands: "Account" | "Transfer" | "Balance" | "Go Back"</p>
+        {!isListening ? (
+          <button ref={buttonRef} className="btn btn-light mt-3" onClick={() => {
+            console.log('Button clicked, starting listening');
+            handleStartListening();
+          }}>
+            Activate Voice Navigation (Press Spacebar)
+          </button>
+        ) : (
+          <p className="text-success">Listening... Say "Account", "Transfer", or "Balance"</p>
+        )}
+      </Container>
+    </header>
+  );
+};
 
 // Features Section
 const Features = () => (
   <section className="container my-5">
     <h2 className="text-center mb-4">Our Services</h2>
-    <div className="row text-center">
-      <div className="col-md-4">
-        <div className="card p-3 shadow">
-          <h4>Online Banking</h4>
-          <p>Manage your accounts anytime, anywhere.</p>
-        </div>
-      </div>
-      <div className="col-md-4">
-        <div className="card p-3 shadow">
-          <h4>Secure Transactions</h4>
-          <p>Top-notch security for safe transactions.</p>
-        </div>
-      </div>
-      <div className="col-md-4">
-        <div className="card p-3 shadow">
-          <h4>Instant Loans</h4>
-          <p>Quick loan approvals with minimal paperwork.</p>
-        </div>
-      </div>
-    </div>
+    <Row className="text-center">
+      <Col md={3}>
+        <Card className="p-3 shadow"><h4>Online Banking</h4><p>Manage your accounts anytime, anywhere.</p></Card>
+      </Col>
+      <Col md={3}>
+        <Card className="p-3 shadow"><h4>Secure Transactions</h4><p>Top-notch security for safe transactions.</p></Card>
+      </Col>
+      <Col md={3}>
+        <Card className="p-3 shadow"><h4>Instant Loans</h4><p>Quick loan approvals with minimal paperwork.</p></Card>
+      </Col>
+      <Col md={3}>
+        <Card className="p-3 shadow"><h4>Voice Navigation</h4><p>Navigate with voice commands.</p></Card>
+      </Col>
+    </Row>
   </section>
 );
-const AdditionalSections = () => {
-  return (
-    <Container className="my-5">
-      <Row>
-        <Col md={4}>
-          <h4>Offers for You</h4>
-          <Card className="p-3 shadow">
-            <h5>Best in Class</h5>
-            <p>Credit Cards with exclusive rewards.</p>
-          </Card>
-          <Card className="p-3 shadow mt-3">
-            <h5>NRI Forex Rates</h5>
-            <p>Best exchange rates for NRI customers.</p>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <h4>Need Help?</h4>
-          <Card className="p-3 shadow">
-            <p>Customer Services</p>
-            <p>Interest Rates</p>
-            <p>Fraud Awareness</p>
-            <p>Credit Card Services</p>
-            <p>Report Disputed Transactions</p>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <h4>Insta Services</h4>
-          <Card className="p-3 shadow">
-            <h5>Debit Card Instant Pin</h5>
-            <p>Set your debit card PIN instantly.</p>
-          </Card>
-          <Card className="p-3 shadow mt-3">
-            <h5>Address Change</h5>
-            <p>Update your mailing or permanent address.</p>
-          </Card>
-          <Card className="p-3 shadow mt-3">
-            <h5>Account Transfer</h5>
-            <p>Transfer your bank account to another branch.</p>
-          </Card>
-        </Col>
-      </Row>
-      <Row className="mt-5">
-        <Col>
-          <h4>Calculators For Your Needs</h4>
-          <Card className="p-3 shadow">
-            <h5>Personal Loan EMI Calculator</h5>
-            <p>Calculate your monthly loan outgo.</p>
-          </Card>
-          <Card className="p-3 shadow mt-3">
-            <h5>Home Loan EMI Calculator</h5>
-            <p>Calculate your monthly expense for a home loan.</p>
-          </Card>
-          <Card className="p-3 shadow mt-3">
-            <h5>RD Calculator</h5>
-            <p>Start small, save regularly with great interest rates.</p>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
-  );
-};
 
 // Footer Component
 const Footer = () => (
   <footer className="bg-dark text-white text-center py-3">
-    <p>&copy; 2025 MyBank. All Rights Reserved.</p>
-    <p><a href="#" className="text-light">Privacy Policy</a> | <a href="#" className="text-light">Terms of Service</a></p>
+    <p>© 2025 MyBank. All Rights Reserved.</p>
+    <p>
+      <button className="btn btn-link text-light p-0" onClick={() => window.location.href = '/privacy-policy'}>Privacy Policy</button> |{' '}
+      <button className="btn btn-link text-light p-0" onClick={() => window.location.href = '/terms-of-service'}>Terms of Service</button>
+    </p>
   </footer>
 );
 
-// Home Component with Voice Navigation
-const Home = () => {
+// Voice Authentication Page
+const VoiceAuth = () => {
   const navigate = useNavigate();
-  const { transcript, resetTranscript } = useSpeechRecognition();
-  const [isListening, setIsListening] = useState(false);
-  const homeContentRef = useRef(null);
+  const [message, setMessage] = useState('');
+  const [attempts, setAttempts] = useState(0);
 
-  const handleStartListening = () => {
-    SpeechRecognition.startListening({ continuous: true });
-    setIsListening(true);
-  };
+  const handleVerify = useCallback(() => {
+    setMessage('Verifying... Please wait.');
+    setTimeout(() => {
+      if (attempts === 0) {
+        setMessage('Voice not recognized.');
+        setAttempts(1);
+      } else {
+        setMessage('Welcome Eben!');
+        console.log('Navigating to /home');
+        navigate('/home');
+      }
+    }, 4000);
+  }, [navigate, attempts]);
 
   useEffect(() => {
-    if (isListening) {
-      const lowerTranscript = transcript.toLowerCase();
-      if (lowerTranscript.includes('account')) {
-        navigate('/account');
-        resetTranscript();
-      } else if (lowerTranscript.includes('transfer')) {
-        navigate('/transfer');
-        resetTranscript();
-      } else if (lowerTranscript.includes('balance')) {
-        navigate('/balance');
-        resetTranscript();
+    const handleKeyDown = (event) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        handleVerify();
       }
-    }
-  }, [transcript, navigate, resetTranscript, isListening]);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleVerify]);
 
   return (
-    <div className="container" ref={homeContentRef}>
+    <div>
       <CustomNavbar />
-      <HeroSection handleStartListening={handleStartListening} isListening={isListening} />
-      <Features />
-      <AdditionalSections />
+      <TTSPlayer />
+      <Container className="text-center my-5">
+        <h1>Voice Authentication</h1>
+        <p>Click Verify or press Spacebar to proceed.</p>
+        <button className="btn btn-info m-2" onClick={handleVerify}>
+          Verify (Spacebar)
+        </button>
+        {message && <p>{message}</p>}
+      </Container>
       <Footer />
     </div>
   );
 };
 
+// Home Page
+const Home = () => {
+  const navigate = useNavigate();
+  const { transcript, resetTranscript, listening } = useSpeechRecognition();
+  const [isListening, setIsListening] = useState(false);
 
-// Account, Transfer, and Balance Pages
+  const handleStartListening = () => {
+    if (!SpeechRecognition.browserSupportsSpeechRecognition()) {
+      console.error('Browser does not support speech recognition.');
+      return;
+    }
+    SpeechRecognition.startListening({ continuous: true });
+    setIsListening(true);
+    console.log('Started listening for voice commands');
+  };
+
+  useEffect(() => {
+    if (isListening && listening) {
+      console.log('Current transcript:', transcript);
+      const lowerTranscript = transcript.toLowerCase();
+      if (lowerTranscript.includes('account')) {
+        console.log('Navigating to /account');
+        navigate('/account');
+        resetTranscript();
+        setIsListening(false);
+      } else if (lowerTranscript.includes('transfer')) {
+        console.log('Navigating to /transfer');
+        navigate('/transfer');
+        resetTranscript();
+        setIsListening(false);
+      } else if (lowerTranscript.includes('balance')) {
+        console.log('Navigating to /balance');
+        navigate('/balance');
+        resetTranscript();
+        setIsListening(false);
+      }
+    }
+  }, [transcript, navigate, resetTranscript, isListening, listening]);
+
+  return (
+    <div>
+      <CustomNavbar />
+      <TTSPlayer />
+      <HeroSection handleStartListening={handleStartListening} isListening={isListening} />
+      <Features />
+      {isListening && <p>Transcript: {transcript}</p>}
+      <Footer />
+    </div>
+  );
+};
+
+// Other Pages
 const Account = () => (
   <>
     <CustomNavbar />
     <VoiceBack />
+    <TTSPlayer />
     <h2 className="text-center my-4">Account Details</h2>
+    <Footer />
   </>
 );
 
@@ -229,16 +267,18 @@ const Transfer = () => (
   <>
     <CustomNavbar />
     <VoiceBack />
+    <TTSPlayer />
     <h2 className="text-center my-4">Transfer Funds</h2>
+    <Footer />
   </>
 );
 
 const Balance = () => {
-  const [userData, setUserData] = useState(null);
-  
+  const [balance, setBalance] = useState(null);
+
   useEffect(() => {
     axios.get("https://currencycompanionbackend4-7j9lrghaz-binsus-projects.vercel.app/api/get-user?account_number=647834894")
-      .then((response) => setUserData(response.data))
+      .then((response) => setBalance(response.data.account_balance))
       .catch((err) => console.error("Error fetching balance:", err));
   }, []);
 
@@ -246,44 +286,17 @@ const Balance = () => {
     <>
       <CustomNavbar />
       <VoiceBack />
-      <div className="container text-center">
+      <TTSPlayer />
+      <Container className="text-center">
         <h2>Balance Inquiry</h2>
-        {userData ? (
-          <p><strong>Balance:</strong> {userData.account_balance}</p>
-        ) : (
-          <p>Loading...</p>
-        )}
-      </div>
+        <p><strong>Balance:</strong> {balance !== null ? balance : "Loading..."}</p>
+      </Container>
+      <Footer />
     </>
   );
 };
 
-// Voice Authentication Component
-const VoiceAuth = () => {
-  const navigate = useNavigate();
-  const [message, setMessage] = useState('');
-
-  const handleVerify = () => {
-    setMessage('Verification successful! Redirecting...');
-    setTimeout(() => navigate('/home'), 1500);
-  };
-
-  return (
-    <div className="container text-center">
-      <CustomNavbar />
-      <Container><h1>Voice Authentication</h1>
-      <p>Press Verify to authenticate.</p>
-      <button className="btn btn-primary" onClick={handleVerify}>Verify</button>
-      {message && <p>{message}</p>}</Container>
-      <PromotionalBanner />
-      <Features />
-      <AdditionalSections />
-      
-    </div>
-  );
-};
-
-// App Component with Routing
+// Main App Component
 const App = () => (
   <Router>
     <Routes>
@@ -292,6 +305,10 @@ const App = () => (
       <Route path="/account" element={<Account />} />
       <Route path="/transfer" element={<Transfer />} />
       <Route path="/balance" element={<Balance />} />
+      <Route path="/faq" element={<div><CustomNavbar /><TTSPlayer /><h2 className="text-center my-4">FAQ</h2><Footer /></div>} />
+      <Route path="/contact-us" element={<div><CustomNavbar /><TTSPlayer /><h2 className="text-center my-4">Contact Us</h2><Footer /></div>} />
+      <Route path="/privacy-policy" element={<div><CustomNavbar /><TTSPlayer /><h2 className="text-center my-4">Privacy Policy</h2><Footer /></div>} />
+      <Route path="/terms-of-service" element={<div><CustomNavbar /><TTSPlayer /><h2 className="text-center my-4">Terms of Service</h2><Footer /></div>} />
     </Routes>
   </Router>
 );
