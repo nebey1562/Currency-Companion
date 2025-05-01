@@ -1,58 +1,87 @@
-from flask import Flask, request, send_from_directory, jsonify
-from flask_cors import CORS  # Add this
+from flask import Flask, send_file, request
+from flask_cors import CORS
 import os
+from gtts import gTTS
+import hashlib
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Simulated user database for enroll/verify
-users = {}
+# Absolute path to audio directory
+AUDIO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'audio'))
 
-@app.route('/audio/<path:filename>')
+# Validate audio directory
+if not os.path.exists(AUDIO_DIR):
+    os.makedirs(AUDIO_DIR)
+    print(f'Server: Created audio directory at {AUDIO_DIR}')
+else:
+    print(f'Server: Audio directory exists at {AUDIO_DIR}')
+
+@app.route('/audio/<filename>')
 def serve_audio(filename):
-    return send_from_directory('../audio', filename, mimetype='audio/mpeg')
+    file_path = os.path.join(AUDIO_DIR, filename)
+    print(f'Server: Serving audio file {file_path}, exists: {os.path.exists(file_path)}')
+    if os.path.exists(file_path):
+        return send_file(file_path)
+    return {'error': 'File not found'}, 404
 
-@app.route('/scrape')
-def scrape():
-    path = request.args.get('path', '/')
-    filename = f"audio{path.replace('/', '_') or '_root'}.mp3"
-    if os.path.exists(f"../audio/{filename}"):
-        return jsonify({"scrapedData": f"Pre-generated content for {path}"})
-    return jsonify({"scrapedData": "Content not available"}), 404
-
-@app.route('/tts')
+@app.route('/tts', methods=['GET'])
 def tts():
-    path = request.args.get('text', '/').split()[0]
-    filename = f"audio{path.replace('/', '_') or '_root'}.mp3"
-    if os.path.exists(f"../audio/{filename}"):
-        return jsonify({"audioUrl": f"http://localhost:5000/audio/{filename}"})
-    return jsonify({"audioUrl": ""}), 404
+    text = request.args.get('text')
+    if not text:
+        return {'error': 'No text provided'}, 400
 
-@app.route('/enroll', methods=['POST'])
-def enroll():
-    data = request.get_json()
-    user_id = data.get('userId')
-    voice_sample = data.get('voiceSample')
-    if not user_id or not voice_sample:
-        return jsonify({"error": "Missing userId or voiceSample"}), 400
-    users[user_id] = {"voiceSample": voice_sample, "enrolled": True}
-    return jsonify({"message": f"User {user_id} enrolled successfully"}), 200
+    # Map specific text to pre-generated audio files
+    audio_mapping = {
+        '/': 'audio_root.mp3',
+        '/prompt': 'audio_prompt.mp3',
+        '/home': 'audio_home.mp3',
+        '/account': 'audio_account.mp3',
+        '/transfer': 'audio_transfer.mp3',
+        '/balance': 'audio_balance.mp3',
+        '/faq': 'audio_faq.mp3',
+        '/contact-us': 'audio_contact-us.mp3',
+        '/privacy-policy': 'audio_privacy-policy.mp3',
+        '/terms-of-service': 'audio_terms-of-service.mp3',
+        'Do you want to transfer funds?': 'audio_transfer_confirm.mp3',
+        'Please say the amount to transfer.': 'audio_transfer_amount.mp3',
+        'Please say the account number.': 'audio_transfer_account.mp3',
+    }
 
-@app.route('/verify', methods=['POST'])
-def verify():
-    data = request.get_json()
-    user_id = data.get('userId')
-    voice_sample = data.get('voiceSample')
-    if not user_id or not voice_sample:
-        return jsonify({"error": "Missing userId or voiceSample"}), 400
-    if user_id in users and users[user_id]["voiceSample"] == voice_sample:
-        return jsonify({"message": "Verification successful", "verified": True}), 200
-    return jsonify({"message": "Verification failed", "verified": False}), 403
+    # Check if pre-generated audio exists
+    filename = audio_mapping.get(text)
+    if filename:
+        file_path = os.path.join(AUDIO_DIR, filename)
+        print(f'Server: Checking file {file_path} for text "{text}", exists: {os.path.exists(file_path)}')
+        if os.path.exists(file_path):
+            print(f'Server: Returning pre-generated audio URL for "{text}": http://localhost:5000/audio/{filename}')
+            return {'audioUrl': f'http://localhost:5000/audio/{filename}'}
+        else:
+            print(f'Server: Error: Expected file {file_path} for text "{text}" does not exist')
+            return {'error': f'Pre-generated audio file {filename} not found'}, 404
+
+    # Generate audio dynamically for unmapped text
+    try:
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+        filename = f'audio_{text_hash}.mp3'
+        file_path = os.path.join(AUDIO_DIR, filename)
+
+        if not os.path.exists(file_path):
+            print(f'Server: Generating audio for "{text}" at {file_path}')
+            tts = gTTS(text=text, lang='en')
+            tts.save(file_path)
+        else:
+            print(f'Server: Using cached audio for "{text}" at {file_path}')
+
+        print(f'Server: Returning dynamic audio URL for "{text}": http://localhost:5000/audio/{filename}')
+        return {'audioUrl': f'http://localhost:5000/audio/{filename}'}
+    except Exception as e:
+        print(f'Server: Error generating audio for "{text}": {str(e)}')
+        return {'error': 'Failed to generate audio'}, 500
 
 if __name__ == '__main__':
-    from waitress import serve
-    print("Starting server on http://localhost:5000...")
-    try:
-        serve(app, host="127.0.0.1", port=5000)
-    except Exception as e:
-        print(f"Server failed to start: {e}")
+    print(f'Server: Starting with AUDIO_DIR={AUDIO_DIR}')
+    # List audio files for debugging
+    audio_files = [f for f in os.listdir(AUDIO_DIR) if f.endswith('.mp3')]
+    print(f'Server: Audio files found in {AUDIO_DIR}: {audio_files}')
+    app.run(debug=True)

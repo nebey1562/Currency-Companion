@@ -1,22 +1,51 @@
-from gtts import gTTS
 import os
+from gtts import gTTS
 
-pages = {
-    "/": "MyBank Accounts Loans FAQ Contact Us Profile Voice Authentication Click Verify or press Spacebar to proceed. © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/home": "MyBank Accounts Loans FAQ Contact Us Profile Voice Commands: Account Transfer Balance Go Back Our Services Online Banking Manage your accounts anytime anywhere. Secure Transactions Top-notch security for safe transactions. Instant Loans Quick loan approvals with minimal paperwork. Voice Navigation Navigate with voice commands. © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/account": "MyBank Accounts Loans FAQ Contact Us Profile Account Details © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/transfer": "MyBank Accounts Loans FAQ Contact Us Profile Transfer Funds © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/balance": "MyBank Accounts Loans FAQ Contact Us Profile Balance Inquiry © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/faq": "MyBank Accounts Loans FAQ Contact Us Profile FAQ © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/contact-us": "MyBank Accounts Loans FAQ Contact Us Profile Contact Us © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/privacy-policy": "MyBank Accounts Loans FAQ Contact Us Profile Privacy Policy © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service",
-    "/terms-of-service": "MyBank Accounts Loans FAQ Contact Us Profile Terms of Service © 2025 MyBank. All Rights Reserved. Privacy Policy Terms of Service"
+# Directory to store audio files
+AUDIO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'audio'))
+
+# Ensure audio directory exists
+if not os.path.exists(AUDIO_DIR):
+    os.makedirs(AUDIO_DIR)
+    print(f'Created audio directory at {AUDIO_DIR}')
+
+# Audio content mapping
+audio_content = {
+    '/': 'Welcome to the Voice Authentication page. Please say your verification phrase or press Spacebar to proceed.',
+    '/prompt': 'Do you want me to read the content on this page?',
+    '/home': 'Welcome to the MyBank home page. You can say account, transfer, balance, or go home to navigate.',
+    '/account': 'This is the Account Details page, showing your account information and recent transactions.',
+    '/transfer': 'This is the Transfer Funds page. Follow the prompts to transfer money.',
+    '/balance': 'This is the Balance Inquiry page, showing your current account balance and last transaction.',
+    '/faq': 'This is the FAQ page, providing answers to common questions.',
+    '/contact-us': 'This is the Contact Us page, with information to reach our support team.',
+    '/privacy-policy': 'This is the Privacy Policy page, detailing how we protect your data.',
+    '/terms-of-service': 'This is the Terms of Service page, outlining the usage terms for our services.',
+    'Do you want to transfer funds?': 'Do you want to transfer funds?',
+    'Please say the amount to transfer.': 'Please say the amount to transfer.',
+    'Please say the account number.': 'Please say the account number.',
 }
 
-os.makedirs("../audio", exist_ok=True)
+# Generate audio files
+for text, content in audio_content.items():
+    # Generate filename based on text
+    if text == '/':
+        filename = 'audio_root.mp3'
+    elif text == '/prompt':
+        filename = 'audio_prompt.mp3'
+    elif text.startswith('/'):
+        filename = f'audio_{text[1:]}.mp3'
+    else:
+        # Sanitize text for filename (replace spaces and special characters)
+        sanitized = text.lower().replace(' ', '_').replace('?', '')
+        filename = f'audio_{sanitized}.mp3'
 
-for path, text in pages.items():
-    tts = gTTS(text, lang="en")
-    filename = f"audio{path.replace('/', '_') or '_root'}.mp3"
-    tts.save(f"../audio/{filename}")
-    print(f"Saved ../audio/{filename}")
+    file_path = os.path.join(AUDIO_DIR, filename)
+    
+    if os.path.exists(file_path):
+        print(f'Skipping {file_path}, already exists')
+        continue
+    
+    print(f'Saving {file_path}')
+    tts = gTTS(text=content, lang='en')
+    tts.save(file_path)
