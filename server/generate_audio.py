@@ -36,8 +36,8 @@ for text, content in audio_content.items():
     elif text.startswith('/'):
         filename = f'audio_{text[1:]}.mp3'
     else:
-        # Sanitize text for filename (replace spaces and special characters)
-        sanitized = text.lower().replace(' ', '_').replace('?', '')
+        # Sanitize text for filename
+        sanitized = text.lower().replace(' ', '_').replace('?', '').replace('.', '')
         filename = f'audio_{sanitized}.mp3'
 
     file_path = os.path.join(AUDIO_DIR, filename)

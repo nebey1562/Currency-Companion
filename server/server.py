@@ -31,6 +31,8 @@ def tts():
     if not text:
         return {'error': 'No text provided'}, 400
 
+    print(f'Server: Received text: "{text}"')
+
     # Map specific text to pre-generated audio files
     audio_mapping = {
         '/': 'audio_root.mp3',
@@ -57,10 +59,9 @@ def tts():
             print(f'Server: Returning pre-generated audio URL for "{text}": http://localhost:5000/audio/{filename}')
             return {'audioUrl': f'http://localhost:5000/audio/{filename}'}
         else:
-            print(f'Server: Error: Expected file {file_path} for text "{text}" does not exist')
-            return {'error': f'Pre-generated audio file {filename} not found'}, 404
+            print(f'Server: Warning: Expected file {file_path} for text "{text}" does not exist, generating dynamically')
 
-    # Generate audio dynamically for unmapped text
+    # Generate audio dynamically for unmapped or missing files
     try:
         text_hash = hashlib.md5(text.encode()).hexdigest()
         filename = f'audio_{text_hash}.mp3'
@@ -81,7 +82,6 @@ def tts():
 
 if __name__ == '__main__':
     print(f'Server: Starting with AUDIO_DIR={AUDIO_DIR}')
-    # List audio files for debugging
     audio_files = [f for f in os.listdir(AUDIO_DIR) if f.endswith('.mp3')]
     print(f'Server: Audio files found in {AUDIO_DIR}: {audio_files}')
     app.run(debug=True)

@@ -54,7 +54,7 @@ const CustomNavbar = () => (
 );
 
 // TTS Player Component with Unified Voice Input
-const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCommand, onYes }) => {
+const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCommand, onYes, playContent, setPlayContent }) => {
   const location = useLocation();
   const audioRef = useRef(null);
   const { transcript, interimTranscript, finalTranscript, resetTranscript, listening } = useSpeechRecognition();
@@ -109,6 +109,9 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
     } catch (error) {
       console.error('TTSPlayer: Error fetching audio:', error);
       if (text === '/prompt') {
+        onPromptAnswered?.();
+      } else if (['Do you want to transfer funds?', 'Please say the amount to transfer.', 'Please say the account number.'].includes(text)) {
+        console.log('TTSPlayer: Skipping failed audio for transfer flow, proceeding with state');
         onPromptAnswered?.();
       }
     }
@@ -217,11 +220,12 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
   // Play content audio if user said "yes"
   useEffect(() => {
     if (!isMounted) return;
-    if (shouldPlayContent) {
+    if (shouldPlayContent || playContent) {
       console.log('TTSPlayer: Fetching content audio for', location.pathname);
       playAudio(location.pathname);
+      if (playContent) setPlayContent(false);
     }
-  }, [shouldPlayContent, location.pathname, isMounted]);
+  }, [shouldPlayContent, playContent, location.pathname, isMounted]);
 
   // Cleanup on unmount or page change
   useEffect(() => {
@@ -646,6 +650,7 @@ const Transfer = () => {
 
   // Trigger transfer flow after TTS prompt
   useEffect(() => {
+    console.log('Transfer: State changed, transferState:', transferState, 'isPromptAnswered:', isPromptAnswered);
     if (isPromptAnswered && transferState === 'initial') {
       setTransferState('confirm');
       setTtsText('Do you want to transfer funds?');
@@ -655,6 +660,7 @@ const Transfer = () => {
 
   // Handle transfer flow
   useEffect(() => {
+    console.log('Transfer: Handling transfer flow, transferState:', transferState);
     if (transferState === 'amount') {
       setTtsText('Please say the amount to transfer.');
       setMessage('Please say the amount to transfer.');
@@ -697,6 +703,7 @@ const Transfer = () => {
 
   const handleYes = useCallback(() => {
     console.log('Transfer: Handling yes command');
+    setIsPromptAnswered(true);
     setPlayContent(true);
     setStartAudio(false);
   }, []);
