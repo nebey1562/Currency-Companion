@@ -3,8 +3,14 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Navbar, Nav, NavDropdown, Container, Row, Col, Card, Table } from 'react-bootstrap';
+import { Navbar, Nav, NavDropdown, Container, Row, Col, Card, Button, Table, ListGroup } from 'react-bootstrap';
 import './App.css';
+
+// Placeholder image paths (replace with actual paths after sourcing images)
+const PROMO_BANNER = '/assets/promo-banner.jpg'; // 600x200px credit card offer
+const ACCOUNT_HEADER = '/assets/account-header.jpg'; // 1200x300px financial chart
+const TRANSFER_HEADER = '/assets/transfer-header.jpg'; // 1200x300px money transfer
+const BALANCE_HEADER = '/assets/balance-header.jpg'; // 1200x300px wallet or piggy bank
 
 // Voice Navigation Component
 const VoiceBack = () => {
@@ -23,22 +29,22 @@ const VoiceBack = () => {
   return null;
 };
 
-// Navbar Component
+// Navbar Component with More Options
 const CustomNavbar = () => (
-  <Navbar bg="dark" variant="dark" expand="lg" style={{ height: '50px' }}>
+  <Navbar bg="dark" variant="dark" expand="lg" style={{ height: '60px' }}>
     <Container>
       <Navbar.Brand href="/home">MyBank</Navbar.Brand>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
       <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="me-auto">
-          <NavDropdown title="Accounts" id="accounts-dropdown">
-            <NavDropdown.Item>Savings Account</NavDropdown.Item>
-            <NavDropdown.Item>Current Account</NavDropdown.Item>
+          <Nav.Link href="/account"><i className="fas fa-user me-1"></i> Account</Nav.Link>
+          <Nav.Link href="/transfer"><i className="fas fa-exchange-alt me-1"></i> Transfer</Nav.Link>
+          <Nav.Link href="/balance"><i className="fas fa-wallet me-1"></i> Balance</Nav.Link>
+          <NavDropdown title="Investments" id="investments-dropdown">
+            <NavDropdown.Item>Mutual Funds</NavDropdown.Item>
+            <NavDropdown.Item>Stocks</NavDropdown.Item>
           </NavDropdown>
-          <NavDropdown title="Loans" id="loans-dropdown">
-            <NavDropdown.Item>Home Loan</NavDropdown.Item>
-            <NavDropdown.Item>Personal Loan</NavDropdown.Item>
-          </NavDropdown>
+          <Nav.Link href="/support">Support</Nav.Link>
           <Nav.Link href="/faq">FAQ</Nav.Link>
           <Nav.Link href="/contact-us">Contact Us</Nav.Link>
         </Nav>
@@ -53,7 +59,7 @@ const CustomNavbar = () => (
   </Navbar>
 );
 
-// TTS Player Component with Unified Voice Input
+// TTS Player Component with Updated Audio Prompts
 const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCommand, onYes, playContent, setPlayContent }) => {
   const location = useLocation();
   const audioRef = useRef(null);
@@ -65,7 +71,6 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
   const [isMounted, setIsMounted] = useState(true);
   const commandTimeoutRef = useRef(null);
 
-  // Reset audio element
   const resetAudio = (audioElement) => {
     if (audioElement) {
       audioElement.pause();
@@ -75,7 +80,6 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
     }
   };
 
-  // Play audio (prompt, content, or custom text)
   const playAudio = async (text) => {
     if (!isMounted) return;
     try {
@@ -104,20 +108,19 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
               onPromptAnswered?.();
             }
           }
-        }, 100); // Slight delay to avoid AbortError
+        }, 100);
       }
     } catch (error) {
       console.error('TTSPlayer: Error fetching audio:', error);
       if (text === '/prompt') {
         onPromptAnswered?.();
-      } else if (['Do you want to transfer funds?', 'Please say the amount to transfer.', 'Please say the account number.'].includes(text)) {
+      } else if (['Do you want to proceed with the transfer process using the transfer details card?', 'Please specify the transfer amount in the transfer details card.', 'Please provide the account number in the transfer details card.'].includes(text)) {
         console.log('TTSPlayer: Skipping failed audio for transfer flow, proceeding with state');
         onPromptAnswered?.();
       }
     }
   };
 
-  // Start continuous listening with interim results
   useEffect(() => {
     if (!isMounted) return;
     if (!SpeechRecognition.browserSupportsSpeechRecognition()) {
@@ -137,21 +140,19 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
     };
   }, [listening, isMounted]);
 
-  // Handle prompt phase
   useEffect(() => {
     if (!isMounted) return;
     if (startAudio && !isPrompting && !shouldPlayContent && !ttsText) {
       console.log('TTSPlayer: Starting prompt phase for', location.pathname);
       setIsPrompting(true);
       playAudio('/prompt');
-      // Set timeout for no response
       const timeout = setTimeout(() => {
         console.log('TTSPlayer: Prompt timeout, stopping prompt phase');
         setIsPrompting(false);
         setStartAudio(false);
         resetTranscript();
         onPromptAnswered?.();
-      }, 15000); // 15 seconds
+      }, 15000);
       setPromptTimeout(timeout);
     } else if (startAudio && ttsText) {
       console.log('TTSPlayer: Playing custom TTS for', ttsText);
@@ -162,7 +163,6 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
     };
   }, [startAudio, isPrompting, shouldPlayContent, ttsText, location.pathname, onPromptAnswered, setStartAudio, isMounted]);
 
-  // Handle voice input
   useEffect(() => {
     if (!isMounted) return;
     if (listening) {
@@ -200,7 +200,6 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
     }
   }, [interimTranscript, finalTranscript, listening, isPrompting, resetTranscript, promptTimeout, onCommand, setStartAudio, onYes, isMounted]);
 
-  // Process interim commands with timeout
   useEffect(() => {
     if (!isMounted) return;
     if (currentCommand && !isPrompting) {
@@ -210,14 +209,13 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
         onCommand?.(currentCommand);
         setCurrentCommand('');
         resetTranscript();
-      }, 2000); // Wait 2 seconds for full phrase
+      }, 2000);
     }
     return () => {
       if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
     };
   }, [currentCommand, onCommand, resetTranscript, isMounted]);
 
-  // Play content audio if user said "yes"
   useEffect(() => {
     if (!isMounted) return;
     if (shouldPlayContent || playContent) {
@@ -227,7 +225,6 @@ const TTSPlayer = ({ startAudio, setStartAudio, ttsText, onPromptAnswered, onCom
     }
   }, [shouldPlayContent, playContent, location.pathname, isMounted]);
 
-  // Cleanup on unmount or page change
   useEffect(() => {
     setIsMounted(true);
     const audioElement = audioRef.current;
@@ -270,10 +267,7 @@ const HeroSection = ({ toggleListening, isListening, startAudio, setStartAudio }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      console.log('HeroSection: Cleaned up keydown listener');
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleListening, startAudio, setStartAudio]);
 
   return (
@@ -316,14 +310,74 @@ const Features = () => (
   </section>
 );
 
-// Footer Component
+// Quick Links Sidebar Component
+const QuickLinks = () => (
+  <Card className="shadow-lg p-3 mb-4 quick-links">
+    <Card.Title><h4>Quick Links</h4></Card.Title>
+    <ListGroup variant="flush">
+      <ListGroup.Item><i className="fas fa-file-invoice me-2"></i> Pay Bills</ListGroup.Item>
+      <ListGroup.Item><i className="fas fa-hand-holding-usd me-2"></i> Apply for Loan</ListGroup.Item>
+      <ListGroup.Item><i className="fas fa-headset me-2"></i> Customer Support</ListGroup.Item>
+      <ListGroup.Item><i className="fas fa-lock me-2"></i> Security Settings</ListGroup.Item>
+    </ListGroup>
+  </Card>
+);
+
+// Promotional Banner Component
+const PromoBanner = () => (
+  <Card className="shadow-lg mb-4 promo-banner">
+    <img src={PROMO_BANNER} alt="Credit Card Offer" className="promo-image" />
+    <Card.Body>
+      <Card.Title>Get 5% Cashback with Our Credit Card!</Card.Title>
+      <Button variant="primary">Apply Now</Button>
+    </Card.Body>
+  </Card>
+);
+
+// Recent Activity Widget Component
+const RecentActivity = () => (
+  <Card className="shadow-lg p-3 mb-4 recent-activity">
+    <Card.Title><h4>Recent Activity</h4></Card.Title>
+    <ListGroup variant="flush">
+      <ListGroup.Item>Deposited $500 - 2025-04-29</ListGroup.Item>
+      <ListGroup.Item>Bill Payment $50 - 2025-04-28</ListGroup.Item>
+      <ListGroup.Item>Transfer $200 - 2025-04-27</ListGroup.Item>
+    </ListGroup>
+  </Card>
+);
+
+// Footer Component with More Links
 const Footer = () => (
-  <footer className="bg-dark text-white text-center py-3">
-    <p>© 2025 MyBank. All Rights Reserved.</p>
-    <p>
-      <a href="/privacy-policy" className="text-light">Privacy Policy</a> |{' '}
-      <a href="/terms-of-service" className="text-light">Terms of Service</a>
-    </p>
+  <footer className="footer">
+    <Container>
+      <Row>
+        <Col md={3}>
+          <h5>Contact Us</h5>
+          <p><i className="fas fa-phone-alt me-2"></i> 1-800-555-1234</p>
+          <p><i className="fas fa-envelope me-2"></i> support@mybank.com</p>
+        </Col>
+        <Col md={3}>
+          <h5>Quick Links</h5>
+          <p><a href="/faq">FAQ</a></p>
+          <p><a href="/contact-us">Contact Us</a></p>
+          <p><a href="/support">Support</a></p>
+        </Col>
+        <Col md={3}>
+          <h5>Legal</h5>
+          <p><a href="/privacy-policy">Privacy Policy</a></p>
+          <p><a href="/terms-of-service">Terms of Service</a></p>
+        </Col>
+        <Col md={3}>
+          <h5>Follow Us</h5>
+          <p>
+            <a href="#"><i className="fab fa-facebook-f me-2"></i></a>
+            <a href="#"><i className="fab fa-twitter me-2"></i></a>
+            <a href="#"><i className="fab fa-linkedin-in"></i></a>
+          </p>
+        </Col>
+      </Row>
+      <p className="mt-3">© 2025 MyBank. All Rights Reserved.</p>
+    </Container>
   </footer>
 );
 
@@ -380,13 +434,9 @@ const VoiceAuth = () => {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      console.log('VoiceAuth: Cleaned up keydown listener');
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleVerify, startAudio, playContent]);
 
-  // Debug button to simulate voice commands
   const simulateCommand = (command) => {
     console.log('VoiceAuth: Simulating command:', command);
     if (command === 'yes') {
@@ -506,7 +556,7 @@ const Home = () => {
   );
 };
 
-// Account Page with Static Data
+// Account Page with Cluttered UI
 const Account = () => {
   const navigate = useNavigate();
   const [accountDetails, setAccountDetails] = useState(null);
@@ -515,14 +565,11 @@ const Account = () => {
   const [playContent, setPlayContent] = useState(false);
 
   useEffect(() => {
-    // Static account details
     setAccountDetails({
       account_number: '647834894',
       account_type: 'Savings',
       balance: 5000.0,
     });
-
-    // Static transaction data
     setTransactions([
       { id: 1, date: '2025-04-28', description: 'Grocery Purchase', amount: -150.0, type: 'Debit' },
       { id: 2, date: '2025-04-27', description: 'Salary Deposit', amount: 2000.0, type: 'Credit' },
@@ -542,10 +589,7 @@ const Account = () => {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      console.log('Account: Cleaned up keydown listener');
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [startAudio, playContent]);
 
   const handleCommand = useCallback((command) => {
@@ -573,57 +617,74 @@ const Account = () => {
         playContent={playContent}
         setPlayContent={setPlayContent}
       />
-      <Container className="my-4">
-        <h2 className="text-center mb-4">Account Details</h2>
-        {accountDetails ? (
-          <Card className="p-4 mb-4 shadow">
-            <h4>Account Information</h4>
-            <p><strong>Account Number:</strong> {accountDetails.account_number}</p>
-            <p><strong>Account Type:</strong> {accountDetails.account_type}</p>
-            <p><strong>Current Balance:</strong> ${accountDetails.balance.toFixed(2)}</p>
-          </Card>
-        ) : (
-          <p>Loading account details...</p>
-        )}
-        <h3 className="mb-3">Recent Transactions</h3>
-        {transactions.length > 0 ? (
-          <Table striped bordered hover responsive>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((txn) => (
-                <tr key={txn.id}>
-                  <td>{txn.date}</td>
-                  <td>{txn.description}</td>
-                  <td style={{ color: txn.type === 'Debit' ? 'red' : 'green' }}>
-                    {txn.type === 'Debit' ? '-' : '+'}${Math.abs(txn.amount).toFixed(2)}
-                  </td>
-                  <td>{txn.type}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        ) : (
-          <p>No transactions available.</p>
-        )}
+      <div className="header-image" style={{ backgroundImage: `url(${ACCOUNT_HEADER})` }}>
+        <h1 className="header-title">Account Overview</h1>
+      </div>
+      <Container className="my-5">
+        <Row>
+          <Col md={3}>
+            <QuickLinks />
+          </Col>
+          <Col md={6}>
+            <Card className="shadow-lg p-4 mb-4">
+              <Card.Title><h3><i className="fas fa-user me-2"></i> Account Summary</h3></Card.Title>
+              {accountDetails && (
+                <>
+                  <p><strong>Account Number:</strong> {accountDetails.account_number}</p>
+                  <p><strong>Account Type:</strong> {accountDetails.account_type}</p>
+                  <p><strong>Current Balance:</strong> <span className="highlight">${accountDetails.balance.toFixed(2)}</span></p>
+                  <Button variant="primary" className="mt-3">View Details</Button>
+                  <Button variant="secondary" className="mt-3 ms-2">Download Statement</Button>
+                </>
+              )}
+            </Card>
+            <Card className="shadow-lg p-4 mb-4">
+              <Card.Title><h3>Recent Transactions</h3></Card.Title>
+              {transactions.length > 0 ? (
+                <Table striped bordered hover responsive>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Amount</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((txn) => (
+                      <tr key={txn.id}>
+                        <td>{txn.date}</td>
+                        <td>{txn.description}</td>
+                        <td style={{ color: txn.type === 'Debit' ? 'red' : 'green' }}>
+                          {txn.type === 'Debit' ? '-' : '+'}${Math.abs(txn.amount).toFixed(2)}
+                        </td>
+                        <td>{txn.type}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              ) : (
+                <p>No transactions available.</p>
+              )}
+            </Card>
+          </Col>
+          <Col md={3}>
+            <PromoBanner />
+            <RecentActivity />
+          </Col>
+        </Row>
       </Container>
       <Footer />
     </>
   );
 };
 
-// Transfer Page with Voice Command Flow
+// Transfer Page with Cluttered UI
 const Transfer = () => {
   const navigate = useNavigate();
   const [startAudio, setStartAudio] = useState(false);
   const [isPromptAnswered, setIsPromptAnswered] = useState(false);
-  const [transferState, setTransferState] = useState('initial'); // initial, confirm, amount, account, completed
+  const [transferState, setTransferState] = useState('initial');
   const [transferAmount, setTransferAmount] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [message, setMessage] = useState('');
@@ -642,33 +703,26 @@ const Transfer = () => {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      console.log('Transfer: Cleaned up keydown listener');
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [startAudio, playContent]);
 
-  // Trigger transfer flow after TTS prompt
   useEffect(() => {
-    console.log('Transfer: State changed, transferState:', transferState, 'isPromptAnswered:', isPromptAnswered);
     if (isPromptAnswered && transferState === 'initial') {
       setTransferState('confirm');
-      setTtsText('Do you want to transfer funds?');
-      setMessage('Do you want to transfer funds?');
+      setTtsText('Do you want to proceed with the transfer process using the transfer details card?');
+      setMessage('Do you want to proceed with the transfer process?');
     }
   }, [isPromptAnswered, transferState]);
 
-  // Handle transfer flow
   useEffect(() => {
-    console.log('Transfer: Handling transfer flow, transferState:', transferState);
     if (transferState === 'amount') {
-      setTtsText('Please say the amount to transfer.');
-      setMessage('Please say the amount to transfer.');
+      setTtsText('Please specify the transfer amount in the transfer details card.');
+      setMessage('Please specify the transfer amount.');
     } else if (transferState === 'account') {
-      setTtsText('Please say the account number.');
-      setMessage('Please say the account number.');
+      setTtsText('Please provide the account number in the transfer details card.');
+      setMessage('Please provide the account number.');
     } else if (transferState === 'completed') {
-      const confirmation = `Transfer of ${transferAmount} to account ${accountNumber} completed.`;
+      const confirmation = `Transfer of ${transferAmount} to account ${accountNumber} completed. Check the recent activity on the right for details.`;
       setTtsText(confirmation);
       setMessage(confirmation);
     }
@@ -678,22 +732,18 @@ const Transfer = () => {
     (command) => {
       console.log('Transfer: Received command:', command);
       if (command.includes('go home') || command.includes('go to home') || command.includes('go back')) {
-        console.log('Transfer: Navigating to /home');
         navigate('/home');
         setTransferState('initial');
         setTtsText('');
         return;
       }
       if (transferState === 'confirm' && command.includes('yes')) {
-        console.log('Transfer: User confirmed, asking for amount');
         setTransferState('amount');
       } else if (transferState === 'amount') {
         const amount = command.match(/\d+(\.\d+)?/)?.[0] || command;
-        console.log('Transfer: Amount captured:', amount);
         setTransferAmount(amount);
         setTransferState('account');
       } else if (transferState === 'account') {
-        console.log('Transfer: Account number captured:', command);
         setAccountNumber(command);
         setTransferState('completed');
       }
@@ -702,7 +752,6 @@ const Transfer = () => {
   );
 
   const handleYes = useCallback(() => {
-    console.log('Transfer: Handling yes command');
     setIsPromptAnswered(true);
     setPlayContent(true);
     setStartAudio(false);
@@ -722,16 +771,45 @@ const Transfer = () => {
         playContent={playContent}
         setPlayContent={setPlayContent}
       />
-      <Container className="text-center my-4">
-        <h2>Transfer Funds</h2>
-        <p>{message}</p>
+      <div className="header-image" style={{ backgroundImage: `url(${TRANSFER_HEADER})` }}>
+        <h1 className="header-title">Transfer Funds</h1>
+      </div>
+      <Container className="my-5">
+        <Row>
+          <Col md={3}>
+            <QuickLinks />
+          </Col>
+          <Col md={6}>
+            <Card className="shadow-lg p-4 mb subida al repositorio-4">
+              <Card.Title><h3><i className="fas fa-exchange-alt me-2"></i> Transfer Details</h3></Card.Title>
+              <p><strong>Status:</strong> {transferState === 'completed' ? 'Completed' : 'In Progress'}</p>
+              {transferState !== 'initial' && (
+                <>
+                  <p><strong>Amount:</strong> ${transferAmount || 'Not specified'}</p>
+                  <p><strong>Account Number:</strong> {accountNumber || 'Not specified'}</p>
+                  {transferState === 'confirm' && <Button variant="primary" className="mt-3">Confirm Transfer</Button>}
+                  {transferState === 'amount' && <Button variant="primary" className="mt-3">Set Amount</Button>}
+                  {transferState === 'account' && <Button variant="primary" className="mt-3">Set Account</Button>}
+                </>
+              )}
+            </Card>
+            <Card className="shadow-lg p-4 mb-4">
+              <Card.Title><h4>Instructions</h4></Card.Title>
+              <p>{message}</p>
+            </Card>
+          </Col>
+          <Col md={3}>
+            <PromoBanner />
+            <RecentActivity />
+          </Col>
+        </Row>
       </Container>
       <Footer />
     </>
   );
 };
 
-// Balance Page with Static Data
+// Balance Page with Cluttered UI
 const Balance = () => {
   const navigate = useNavigate();
   const [accountDetails, setAccountDetails] = useState(null);
@@ -740,14 +818,11 @@ const Balance = () => {
   const [playContent, setPlayContent] = useState(false);
 
   useEffect(() => {
-    // Static account details
     setAccountDetails({
       account_holder: 'Eben Smith',
       account_number: '647834894',
       balance: 5000.0,
     });
-
-    // Static last transaction
     setLastTransaction({
       date: '2025-04-28',
       description: 'Grocery Purchase',
@@ -767,10 +842,7 @@ const Balance = () => {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      console.log('Balance: Cleaned up keydown listener');
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [startAudio, playContent]);
 
   const handleCommand = useCallback((command) => {
@@ -798,26 +870,75 @@ const Balance = () => {
         playContent={playContent}
         setPlayContent={setPlayContent}
       />
-      <Container className="text-center my-4">
-        <h2>Balance Inquiry</h2>
-        {accountDetails ? (
-          <Card className="p-4 shadow">
-            <h4>Account Summary</h4>
-            <p><strong>Account Holder:</strong> {accountDetails.account_holder}</p>
-            <p><strong>Account Number:</strong> {accountDetails.account_number}</p>
-            <p><strong>Available Balance:</strong> ${accountDetails.balance.toFixed(2)}</p>
-            {lastTransaction && (
-              <p><strong>Last Transaction:</strong> {lastTransaction.description} (${lastTransaction.amount.toFixed(2)}) on {lastTransaction.date}</p>
-            )}
-          </Card>
-        ) : (
-          <p>Loading account details...</p>
-        )}
+      <div className="header-image" style={{ backgroundImage: `url(${BALANCE_HEADER})` }}>
+        <h1 className="header-title">Balance Inquiry</h1>
+      </div>
+      <Container className="my-5">
+        <Row>
+          <Col md={3}>
+            <QuickLinks />
+          </Col>
+          <Col md={6}>
+            <Card className="shadow-lg p-4 mb-4">
+              <Card.Title><h3><i className="fas fa-wallet me-2"></i> Account Balance</h3></Card.Title>
+              {accountDetails && (
+                <>
+                  <p><strong>Account Holder:</strong> {accountDetails.account_holder}</p>
+                  <p><strong>Account Number:</strong> {accountDetails.account_number}</p>
+                  <p><strong>Available Balance:</strong> <span className="highlight">${accountDetails.balance.toFixed(2)}</span></p>
+                  <Button variant="primary" className="mt-3">View History</Button>
+                  <Button variant="secondary" className="mt-3 ms-2">Set Budget</Button>
+                </>
+              )}
+            </Card>
+            <Card className="shadow-lg p-4 mb-4">
+              <Card.Title><h4>Last Transaction</h4></Card.Title>
+              {lastTransaction ? (
+                <p><strong>Description:</strong> {lastTransaction.description} (${lastTransaction.amount.toFixed(2)}) on {lastTransaction.date}</p>
+              ) : (
+                <p>No recent transactions.</p>
+              )}
+            </Card>
+          </Col>
+          <Col md={3}>
+            <PromoBanner />
+            <RecentActivity />
+          </Col>
+        </Row>
       </Container>
       <Footer />
     </>
   );
 };
+
+// Support Page (New)
+const Support = () => (
+  <div>
+    <CustomNavbar />
+    <TTSPlayer startAudio={false} setStartAudio={() => {}} onCommand={() => {}} onYes={() => {}} />
+    <Container className="my-5">
+      <h1 className="text-center mb-4">Customer Support</h1>
+      <Row>
+        <Col md={6}>
+          <Card className="shadow-lg p-4">
+            <Card.Title><h3>Contact Us</h3></Card.Title>
+            <p><strong>Phone:</strong> 1-800-555-1234</p>
+            <p><strong>Email:</strong> support@mybank.com</p>
+            <Button variant="primary">Live Chat</Button>
+          </Card>
+        </Col>
+        <Col md={6}>
+          <Card className="shadow-lg p-4">
+            <Card.Title><h3>FAQs</h3></Card.Title>
+            <p>Find answers to common questions in our FAQ section.</p>
+            <Button variant="primary" href="/faq">Visit FAQs</Button>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
+    <Footer />
+  </div>
+);
 
 // Main App Component
 const App = () => (
@@ -828,6 +949,7 @@ const App = () => (
       <Route path="/account" element={<Account />} />
       <Route path="/transfer" element={<Transfer />} />
       <Route path="/balance" element={<Balance />} />
+      <Route path="/support" element={<Support />} />
       <Route path="/faq" element={<div><CustomNavbar /><TTSPlayer startAudio={false} setStartAudio={() => {}} onCommand={() => {}} onYes={() => {}} /><h2 className="text-center my-4">FAQ</h2><Footer /></div>} />
       <Route path="/contact-us" element={<div><CustomNavbar /><TTSPlayer startAudio={false} setStartAudio={() => {}} onCommand={() => {}} onYes={() => {}} /><h2 className="text-center my-4">Contact Us</h2><Footer /></div>} />
       <Route path="/privacy-policy" element={<div><CustomNavbar /><TTSPlayer startAudio={false} setStartAudio={() => {}} onCommand={() => {}} onYes={() => {}} /><h2 className="text-center my-4">Privacy Policy</h2><Footer /></div>} />
