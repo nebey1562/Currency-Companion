@@ -39,26 +39,22 @@ body, html {
   color: #007bff;
 }
 
+/* Search Bar */
+.navbar .form-control {
+  width: 200px;
+}
+
 /* Hero Section */
-.hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 50px;
-  background-color: #e0f7fa;
-  min-height: 60vh;
+.hero-ad {
+  border: none;
+  background-color: transparent;
 }
 
-.hero-text {
-  flex: 1;
-  padding-right: 30px;
-  text-align: left;
-}
-
-.hero img {
-  width: 50%;
-  max-width: 600px;
-  height: auto;
+.hero-ad-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 /* Header Image Section */
@@ -79,7 +75,7 @@ body, html {
   font-weight: bold;
 }
 
-/* Card Styling for Main Sections (Account, Balance, Transfer) */
+/* Card Styling for Main Sections */
 .card {
   border: 2px solid #007bff;
   border-radius: 10px;
@@ -189,7 +185,7 @@ body, html {
   text-align: center;
 }
 
-/* Login/Register Button - Always Visible */
+/* Login/Register Button */
 .login-btn {
   background-color: #ff6200;
   color: white;
@@ -237,14 +233,6 @@ body, html {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .hero {
-    flex-direction: column;
-    text-align: center;
-  }
-  .hero img {
-    width: 80%;
-    margin-top: 20px;
-  }
   .navbar {
     flex-direction: column;
     padding: 10px;
@@ -252,6 +240,10 @@ body, html {
   .navbar a {
     padding: 5px 10px;
     font-size: 1rem;
+  }
+  .navbar .form-control {
+    width: 100%;
+    margin-bottom: 10px;
   }
   .card {
     margin-bottom: 15px;
@@ -271,6 +263,9 @@ body, html {
   .footer .col-md-3 {
     margin-bottom: 20px;
   }
+  .hero-ad-image {
+    height: 150px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -283,5 +278,8 @@ body, html {
   }
   .header-title {
     font-size: 1.5rem;
+  }
+  .hero-ad-image {
+    height: 120px;
   }
 }
